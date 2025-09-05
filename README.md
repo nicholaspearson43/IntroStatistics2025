@@ -1,2 +1,2 @@
 # IntroStatistics2025
-Github for the Introductory course on Statistics and Probability
+GitHub repository for the Introductory Course in Statistics and Probability, Academic Year 2025/26, University of Trieste.
