@@ -1,0 +1,109 @@
+---
+title: "Variables and data visualization in R"
+author: "Nicholas Pearson"
+date: "2025-09-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+In order to introduce some concepts from descriptive statistics let’s upload the dataset bank.csv in our environment. The data was downloaded from the UCI Machine Learning Repository (https://archive.ics.uci.edu/dataset/222/bank+marketing) or be found in the MS Teams folder and is related with the marketing campaing of a Portuguese banking institution.\ First, let’s take a look at the data structure and make some comments:
+
+```{r}
+bank <- read.csv("bank.csv", sep =";")
+str(bank)
+```
+
+ Let’s start our analysis from categorical variables and let’s look at the frequency distribution table for the education variable:
+```{r}
+table(bank$education)
+nrow(bank)
+
+```
+In general, the frequency refers to how frequently a specific value occurs. Evaluating the frequency distribution of a variable means creating a table that shows both the values/modes that can be assumed by a variable and the frequency with which each value/mode recurs within the variable itself. \ \
+Different kind of frequencies may be measured:
+
+- Absolute Frequency
+- Relative Frequency 
+- Cumulative Frequency
+
+Graphically speaking, frequency distributions for categorical variables can be represented using either a bar plot or a pie chart:
+```{r}
+#Barplot
+ barplot(table(bank$education), col = "lightblue", main = "Frequency distribution for education", xlab = "Education Level", ylab = "Absolute Frequency")
+```
+
+```{r}
+ #relative frequency
+ rel_fre_education <- table(bank$education)/length(bank$education)
+
+ # let's also look at prop.table()
+ prop.table(table(bank$education))
+```
+
+```{r}
+#Barplot
+ barplot(rel_fre_education, col = "lightgreen", main = "Frequency distribution for education", xlab = "Education Level", ylab = "Relative Frequency")
+```
+
+ That said, there are cases where we want to examine two or more variables simultaneously. In such instances, we deal with a bivariate frequency distribution (for two variables) or a multivariate frequency distribution. For example, let’s now examine education and marital status together:
+ 
+```{r}
+ table(bank$education,bank$marital)
+```
+ 
+ Abivariate frequency distribution is a statistical representation that summarizes the joint frequencies of two variables in a dataset. In other words, it displays how pairs of values from two different variables co-occur or are distributed together. This type of distribution is particularly useful when we want to study the relationship or association between two variables.
+ 
+```{r}
+ library(ggplot2)
+
+ ggplot(bank,aes(x=education,fill=marital))+
+ geom_bar(position="dodge")+
+ labs(title="Comparison of Marital Status and Education")
+```
+ 
+ Moving on now to quantitative variables we can use the table() command to take a look at the frequency distribution of the variable age and then, in this case, we can plot the distribution using the histogram:
+ 
+```{r}
+table(bank$age)
+```
+ 
+```{r}
+hist(bank$age, col = "lightblue", main = "Frequency distribution for age", xlab = "Age", ylab = "Absolute Frequency")
+```
+ 
+ This procedure is accurate unless we are working with continuous quantitative variables. In such cases, to assess the frequency distribution, it becomes necessary to discretize the values by dividing them into classes or categories:
+ 
+```{r}
+#class conversion
+ age_class <- cut(bank$age, breaks = c(0,18,25,30,40,50,60,70,90))
+ table(age_class)
+```
+ 
+ This can also be useful with quantitative variables with a large number of modalities. In constructing the intervals (or classes) each unit must be placed in only one class.\
+ In general, there are some important concepts to keep in mind when dealing with classes defined in terms of intervals, such as the class width defined as the difference between the right end and the left end $d_i$ and the central value of the class $x_i$ evaluated as the difference between the interval extremes divided by two , both values used for performing fundamental statistical calculations.
+ 
+```{r}
+ # Create a histogram with custom breaks
+ breaks <- c(18, 25, 30, 40, 50, 60, 70, 90)
+ hist(bank$age, breaks = breaks, col = "lightblue", xlab = "Age", ylab = "Class Absolute Frequency", freq = TRUE)
+ # Customize the x-axis labels
+ axis(side = 1, at = breaks, labels = breaks)
+```
+ 
+ 
+  Frequency density ratios allow evaluating how many units there are on average per unit of the characteristic. These ratios allow for comparisons between multiple classes because, unlike frequencies, it allows to compare classes of different widths.
+  
+```{r}
+ # Create a histogram with custom breaks
+ breaks <- c(18, 25, 30, 40, 50, 60, 70, 90)
+ hist(bank$age, breaks = breaks, col = "lightgreen", xlab = "Age", ylab = "Class Density Frequency", freq = FALSE)
+ # Customize the x-axis labels
+ axis(side = 1, at = breaks, labels = breaks)
+```
+  
+  
