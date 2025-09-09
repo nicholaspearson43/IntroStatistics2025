@@ -1,0 +1,504 @@
+---
+title: Data Analysis
+author: "Nicholas Pearson"
+date: "September 2025"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setup
+```{r cars}
+#Load the required libraries
+library(insuranceData)
+library(knitr)
+library(ggplot2)
+```
+
+## Load the data
+We will analyze the `AutoClaims` dataset from the insuranceData package, which contains insurance claim information. More details about this dataset can be found in the insuranceData package documentation. 
+```{r pressure, echo=FALSE}
+# Load the AutoClaims dataset
+data(AutoClaims)
+
+# Display first few rows
+head(AutoClaims)
+```
+
+Here we can see the first few rows of the dataset, giving us an overview of the variables.
+## Initial Analysis
+Let’s examine the structure and summary statistics of the dataset. This will help us understand the types of variables and their distributions.
+```{r}
+# Structure of the datset
+str(AutoClaims)
+
+# Summary of the variables
+summary(AutoClaims)
+```
+
+## Frequency Distribution of Risk Classes
+Compute the absolute frequency distribution, the relative frequency distribution and the percentage frequency distribution of the variable CLASS. Print the results in three columns.
+```{r}
+# Absolute frequencies
+abs_freq <- table(AutoClaims$CLASS)
+abs_freq
+
+# Relative frequencies
+rel_freq <- prop.table(abs_freq)
+rel_freq
+
+# Percentage Frequencies
+perc_freq <- prop.table(abs_freq) * 100
+perc_freq
+```
+
+A `bar plot` is a suitable representation for categorical variables like CLASS:
+```{r}
+barplot(abs_freq, 
+        main = "Distribution of Insurance Risk Classes",
+        xlab = "Risk Class",
+        ylab = "Frequency",
+        col = "steelblue",
+        las = 2)  # Rotate x-axis labels
+```
+
+## Distribution of Claim Amounts (`PAID`)
+
+We now look at the PAID variable, representing claim amounts.
+We can represent it graphically using a `histogram`.
+```{r}
+# Basic histogram for PAID variable
+hist(AutoClaims$PAID, 
+     breaks = 50,
+     main = "Distribution of Insurance Claim Costs",
+     xlab = "Claim Cost ($)",
+     ylab = "Frequency",
+     col = "lightblue",
+     border = "black")
+```
+
+We can add mean, median, and quartiles to better understand the spread:
+```{r}
+mean(AutoClaims$PAID)
+median(AutoClaims$PAID)
+
+hist(AutoClaims$PAID, 
+     breaks = 50,
+     main = "Distribution of Insurance Claim Costs",
+     xlab = "Claim Cost ($)",
+     ylab = "Frequency",
+     col = "lightblue",
+     border = "black",
+     xlim = c(0, 10000)
+ )
+abline(v = mean(AutoClaims$PAID), col = "red", lwd = 2, lty = 2) 
+abline(v = median(AutoClaims$PAID), col = "blue", lwd = 2, lty = 2)
+abline(v = quantile(AutoClaims$PAID, 0.25), col = "orange", lwd = 2, lty = 2)
+abline(v = quantile(AutoClaims$PAID, 0.75), col = "orange", lwd = 2, lty = 2)
+```
+
+Red line: mean; Blue line: median; Orange lines: 1st and 3rd quartiles.
+
+## Frequency Distribution in Classes
+
+We create custom intervals for `PAID` to better understand the distribution of claims considering the following classes: [0,5000] (5000,10000] (10000,20000] (20000,50000] (50000,100000] (100000,+)
+```{r}
+# Define class intervals
+breaks <- c(0, 5000, 10000, 20000, 50000, 100000, Inf)
+labels <- c("[0,5000]", "(5000,10000]", "(10000,20000]", 
+            "(20000,50000]", "(50000,100000]", "(100000,+)")
+
+
+# Create classes
+AutoClaims$PAID_classes <- cut(AutoClaims$PAID, 
+                               breaks = breaks, 
+                               labels = labels, 
+                               include.lowest = TRUE)
+AutoClaims$PAID_classes[1:10]
+
+# Compute frequency distributions
+abs_freq_paid <- table(AutoClaims$PAID_classes)
+rel_freq_paid <- prop.table(abs_freq_paid)
+perc_freq_paid <- prop.table(abs_freq_paid) * 100
+
+abs_freq_paid
+```
+
+Visualizing these classes:
+```{r}
+barplot(abs_freq_paid, 
+        main = "Distribution of PAID",
+        xlab = "Paid",
+        ylab = "Frequency",
+        col = "steelblue",
+        las = 2)  # Rotate x-axis labels
+```
+
+Feel free to experiment with other intervals to see how the distribution changes.
+We can also compute densities to normalize the distributions by class width:
+```{r}
+#Compute class widths
+class_widths <- diff(breaks)
+#Given that the last one has no upper bound set the width of the second to last one
+class_widths[length(class_widths)] <- class_widths[length(class_widths)-1]  # Use previous width for last open interval
+#Create densities
+densities <- as.numeric(rel_freq_paid) / class_widths
+
+barplot(densities,
+        names.arg = names(abs_freq_paid),
+        main = "Density Plot of Insurance Claim Costs by Classes",
+        xlab = "Cost Classes ($)",
+        ylab = "Density",
+        col = "lightgreen",
+        las = 2)
+```
+
+## Comparing Claim Amounts by Gender
+
+We can compare claim distributions for males and females:
+```{r}
+par(mfrow=c(1,2))
+
+hist(AutoClaims$PAID[AutoClaims$GENDER=="M"], col = "lightblue", 
+     include.lowest = TRUE, main="MALE",
+     ylim = c(0, 4000),
+      xlab = "Paid Claim")
+hist(AutoClaims$PAID[AutoClaims$GENDER=="F"], col = "lightpink",
+     include.lowest = TRUE, main="FEMALE",
+     ylim = c(0, 4000),
+     xlab = "Paid Claim")
+
+```
+
+## Age and Gender Comparison
+
+`Boxplots` help visualize the age distribution by gender:
+```{r}
+boxplot(AGE ~ GENDER, data = AutoClaims,
+        main = "Age by Gender",
+        xlab = "Gender",
+        ylab = "Age",
+        col = c("lightpink", "lightblue"),
+        border = "black",
+        notch = FALSE)
+```
+
+## Claim Amount by Risk Class
+
+Finally, we compare the square root of `PAID` by `CLASS` to improve readability:
+```{r}
+boxplot(sqrt(PAID) ~ CLASS, data = AutoClaims,
+        main = "Square root of PAID by CLASS",
+        xlab = "Class",
+        ylab = "sqrt Paid",
+        border = "black",
+        notch = FALSE)
+```
+
+## Empirical Cumulative Distribution Function (eCDF)
+
+When dealing with numerical data, defining a distribution can be challenging because most values are unique, making frequency reporting less effective. For instance, in our height data, while a few students reported a height of 68 inches, other students reported unique heights like 68.503937007874 inches or 68.8976377952756 inches, likely converted from 174 and 175 centimeters.
+
+#### **Defining the eCDF**
+
+To summarize numeric data distributions more effectively, statistics introduces the **empirical cumulative distribution function (eCDF)**. This function, denoted by \( F(a) \), represents the proportion of data points that are less than or equal to a specific value \( a \).
+
+The eCDF is defined as:
+
+$$ F(a) = \text{Proportion of data points that are less than or equal to } a $$
+
+#### **Plotting the eCDF for Male Heights**
+
+Here’s how you can plot the eCDF for male heights:
+
+```{r}
+library(dslabs)
+x <- heights$height[heights$sex=="Male"]
+y <- ecdf(x)
+
+plot(y, verticals=TRUE, do.points=FALSE, main="ECDF", xlab="a", ylab="F(a)")
+```
+
+- **`ecdf()`**: This function calculates the empirical cumulative distribution fct for the given data.
+
+This plot shows the cumulative distribution of male heights, indicating the proportion of heights below specific values. For example, from the plot, we can determine that a certain percentage of the male students are shorter than 66 inches, and a different percentage is shorter than 72 inches.
+
+
+
+## Exercises
+
+1\. In the `murders` dataset, the region is a categorical variable and the following is its distribution:
+
+```{r summaries-barplot-exercise, echo = FALSE}
+library(dslabs)
+library(dplyr)
+ds_theme_set()
+murders |> group_by(region) |>
+  summarize(n = n()) |>
+  mutate(Proportion = n/sum(n), 
+         region = reorder(region, Proportion)) |>
+  ggplot(aes(x = region, y = Proportion, fill = region)) + 
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  xlab("")
+```
+
+To the closest 5%, what proportion of the states are in the North Central region?
+
+2\. Which of the following is true:
+
+a.  The graph above is a histogram.
+b.  The graph above shows only four numbers with a bar plot.
+c.  Categories are not numbers, so it does not make sense to graph the distribution.
+d.  The colors, not the height of the bars, describe the distribution.
+
+3\. The plot below shows the eCDF for male heights:
+
+```{r summaries-ecdf-exercise, echo = FALSE}
+heights |> filter(sex == "Male") |> ggplot(aes(height)) + 
+  stat_ecdf() +
+  ylab("F(a)") + xlab("a")
+```
+
+Based on the plot, what percentage of males are shorter than 75 inches?
+
+a.  100%
+b.  95%
+c.  80%
+d.  72 inches
+
+4\. To the closest inch, what height `m` has the property that 1/2 of the male students are taller than `m` and 1/2 are shorter?
+
+a.  61 inches
+b.  64 inches
+c.  69 inches
+d.  74 inches
+
+5\. Here is an eCDF of the murder rates across states:
+
+```{r summaries-ecdf-exercise-2, echo = FALSE}
+murders |> mutate(murder_rate = total/population * 10^5) |>
+  ggplot(aes(murder_rate)) + 
+  stat_ecdf() +
+  ylab("F(a)") + xlab("a")
+```
+
+Knowing that there are 51 states (counting DC) and based on this plot, how many states have murder rates larger than 10 per 100,000 people?
+
+a.  1
+b.  5
+c.  10
+d.  50
+
+6\. Based on the eCDF above, which of the following statements are true:
+
+a.  About half the states have murder rates above 7 per 100,000 and the other half below.
+b.  Most states have murder rates below 2 per 100,000.
+c.  All the states have murder rates above 2 per 100,000.
+d.  With the exception of 4 states, the murder rates are below 5 per 100,000.
+
+7\. Below is a histogram of male heights in our `heights` dataset:
+
+```{r summaries-height-histogram-exercise, echo = FALSE}
+heights |> 
+  filter(sex == "Male") |> 
+  ggplot(aes(height)) + 
+  geom_histogram(binwidth = 1, color = "black")
+```
+
+Based on this plot, how many males are between 63.5 and 65.5?
+
+a.  10
+b.  24
+c.  47
+d.  100
+
+8\. About what **percentage** are shorter than 60 inches?
+
+a.  1%
+b.  10%
+c.  25%
+d.  50%
+
+9\. Study the following boxplots showing population sizes by country:
+
+```{r summaries-boxplot-exercise, echo = FALSE, message = FALSE}
+library(tidyverse)
+library(dslabs)
+ds_theme_set()
+tab <- gapminder |> filter(year == 2010) |> group_by(continent) |> select(continent, population)  
+tab |> ggplot(aes(x = continent, y = population/10^6)) + 
+  geom_boxplot() + 
+  scale_y_continuous(trans = "log10", breaks = c(1,10,100,1000)) + ylab("Population in millions")
+```
+
+Which continent has the country with the biggest population size?
+
+10\. Which continent has the largest median population size?
+
+11\. What is median population size for Africa to the nearest million?
+
+12\. What proportion of countries in Europe have populations below 14 million?
+
+a.  0.99
+b.  0.75
+c.  0.50
+d.  0.25
+
+## Extra: Smooth Histograms
+
+
+### **Histograms**
+
+Though the eCDF is useful, it's not the most popular tool in practice because it doesn’t clearly show where the data is centered, whether it's symmetric, or which ranges contain most of the values. Instead, **histograms** are often preferred for summarizing numerical data.
+
+#### **Creating a Histogram**
+
+A histogram divides the range of data into equal-sized intervals (bins) and counts the number of data points in each bin. These counts are then plotted as bars.
+
+Here’s how to create a histogram for male heights:
+```{r}
+x <- heights$height[heights$sex=="Male"]
+
+hist(x, breaks=seq(from=min(x), to =ceiling(max(x)), by= 1),
+     main="Male Heights", xlab="Height")
+```
+
+#### **Interpreting the Histogram**
+
+The histogram is similar to a bar plot but with a numerical x-axis. From this plot, we can quickly learn several important features of the data:
+
+1. **Range**: Heights vary from 50 to 83 inches.
+2. **Center**: Heights are centered around 69 inches.
+3. **Symmetry**: The distribution is nearly symmetric around 69 inches.
+4. **Majority Range**: Over 95% of the heights fall between 63 and 75 inches.
+
+While the histogram summarizes the data effectively, it does lose some detailed information. For example, all heights within each bin are treated the same, so slight differences between values like 64, 64.1, and 64.2 inches are ignored. However, these small details are often negligible, allowing us to summarize the data with much fewer numbers.
+
+
+### **Smoothed Density Plots**
+
+A **smoothed density plot** is an alternative to histograms for visualizing the distribution of numerical data. Unlike histograms, where data is divided into discrete bins, smoothed density plots provide a continuous estimate of the distribution, giving a more fluid representation of data.
+
+Here’s how you can create a smoothed density plot for male heights:
+```{r}
+plot(density(x), main="Smoothed density - Male", xlab="Height")
+
+f <- heights$height[heights$sex=="Female"]
+plot(density(f), main="Smoothed density - Female", xlab="Height")
+```
+
+In this plot, the sharp edges present in histograms are replaced by a smooth curve, and the y-axis represents *density* rather than counts.
+
+To grasp the idea of smoothed densities, it helps to think in terms of a large hypothetical dataset. Imagine that the heights of male students we have represent a small sample from a much larger population. Suppose we had one million such height measurements, then we could create a histogram with very fine bins. This histogram would appear smooth, with minimal differences in height between adjacent bins.
+
+Smoothed histograms provide a cleaner way to compare distributions across groups. Unlike raw histograms, which can be noisy and sensitive to bin width, smoothed densities highlight the overall shape of the data and make differences between groups easier to see.
+
+```{r}
+# male distribution
+plot(density(x), 
+     main = "Smoothed density", 
+     xlab = "Height", 
+     col = "blue", 
+     lwd = 2,
+     ylim = c(0, 0.15))
+
+# add female distribution
+lines(density(f), 
+      col = "orange", 
+      lwd = 2)
+
+# optional: add legend
+legend("topright", 
+       legend = c("Male", "Female"), 
+       col = c("blue", "orange"), 
+       lwd = 2)
+```
+
+
+#### **Simulating the Smoothness with a Histogram**
+
+We can simulate this concept by creating histograms with smaller and smaller bin sizes:
+
+```{r}
+set.seed(1988)
+x <- c(rnorm(10000,69,3), rnorm(10000,65,3))
+
+par(mfrow=c(1,3))
+hist(x, breaks=seq(from=floor(min(x)), to =ceiling(max(x)), by= 1), main="Binwidth = 1")
+hist(x, breaks=seq(from=floor(min(x)), to =ceiling(max(x)), by= 0.1), main="Binwidth = 0.1")
+hist(x, breaks=seq(from=floor(min(x)), to =ceiling(max(x)), by= 0.01), main="Binwidth = 0.01")
+
+```
+
+As the bin width decreases, the histogram becomes smoother. The smooth density plot essentially draws a curve through the tops of these histogram bars if the bins were infinitely small.
+
+#### **Linking Smoothed Density to Frequency**
+
+In practice, we don’t have millions of data points, so we create a density curve based on the available data. This curve is computed on frequencies rather than raw counts, allowing for a more generalized view of the distribution.
+
+Here’s how we transition from a histogram to a smoothed density:
+
+```{r,eval=TRUE}
+library(gridExtra)
+# Create a histogram and overlay a density curve
+hist1 <- heights |> 
+  filter(sex == "Male") |> 
+  ggplot(aes(height)) +
+  geom_histogram(aes(y = after_stat(density)), binwidth = 1, color = "black")
+
+# Add the smooth density curve to the histogram
+hist2 <- hist1 + geom_line(stat = 'density')
+
+# Plot various steps leading to the smoothed density
+hist3 <- hist1 + geom_point(data = ggplot_build(hist2)$data[[1]], aes(x,y), col = "blue")
+hist4 <- ggplot() + geom_point(data = ggplot_build(hist2)$data[[1]], aes(x,y), col = "blue") + 
+  xlab("height") + ylab("density")
+hist5 <- hist4 + geom_line(data = ggplot_build(hist2)$data[[2]], aes(x,y))
+
+# Final smooth density plot
+hist6 <- heights |> 
+  filter(sex == "Male") |> 
+  ggplot(aes(height)) +
+  geom_density(alpha = 0.2, fill="#00BFC4", col = 0) +
+  geom_line(stat = 'density') +
+  scale_y_continuous(limits = layer_scales(hist2)$y$range$range)
+
+grid.arrange(hist1, hist3, hist4, hist5, hist2, hist6, nrow = 2)
+```
+
+#### **Adjusting Smoothness**
+
+The smoothness of the density curve can be adjusted using the `bw` parameter (bandwidth) in the `density()` function. Different levels of smoothness can lead to different interpretations of the data:
+
+```{r}
+x<- heights$height[heights$sex=="Male"]
+par(mfrow=c(1,3))
+hist(x)
+plot(density(x, bw=0.4), main="Bandwidth=0.4", xlab="Height")
+plot(density(x, bw=2), main = "Bandwidth=2", xlab="Height")
+
+```
+
+
+When selecting the degree of smoothness, choose a level that accurately represents the data without introducing unnecessary noise or oversmoothing.
+
+#### **Interpreting the Y-Axis in Density Plots**
+
+The y-axis in a smoothed density plot is scaled so that the area under the curve equals 1. This allows for comparing distributions, but interpreting specific values requires considering the area under the curve. For instance, to find the proportion of male students with heights between 65 and 68 inches, we can calculate the area under the curve in this range:
+
+```{r,eval=TRUE}
+# Calculate and plot the area under the curve between 65 and 68 inches
+d <- with(heights, density(height[sex == "Male"]))
+tmp <- data.frame(height = d$x, density = d$y)
+
+tmp |> ggplot(aes(height, density)) + 
+  geom_line() + 
+  geom_area(aes(x = height, y = density), data = filter(tmp, between(height, 65, 68)), alpha = 0.2, fill = "#00BFC4")
+```
+
+The area under the curve in this range represents the proportion of male students with heights between 65 and 68 inches.
+
+
+Smoothed density plots provide a powerful way to visualize the distribution of data, offering a continuous representation that can reveal underlying patterns. However, the smoothness must be chosen carefully, and the y-axis interpretation requires understanding that the total area under the curve equals 1. 
