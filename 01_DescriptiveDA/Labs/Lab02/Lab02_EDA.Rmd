@@ -1,0 +1,197 @@
+---
+title: Data Analysis
+author: "Nicholas Pearson"
+date: "September 2025"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setup
+```{r cars}
+#Load the required libraries
+library(insuranceData)
+library(knitr)
+```
+
+## Load the data
+We will analyze the `AutoClaims` dataset from the insuranceData package, which contains insurance claim information. More details about this dataset can be found in the insuranceData package documentation. 
+```{r pressure, echo=FALSE}
+# Load the AutoClaims dataset
+data(AutoClaims)
+
+# Display first few rows
+head(AutoClaims)
+```
+
+Here we can see the first few rows of the dataset, giving us an overview of the variables.
+## Initial Analysis
+Let’s examine the structure and summary statistics of the dataset. This will help us understand the types of variables and their distributions.
+```{r}
+# Structure of the datset
+str(AutoClaims)
+
+# Summary of the variables
+summary(AutoClaims)
+```
+
+## Frequency Distribution of Risk Classes
+Compute the absolute frequency distribution, the relative frequency distribution and the percentage frequency distribution of the variable CLASS. Print the results in three columns.
+```{r}
+# Absolute frequencies
+abs_freq <- table(AutoClaims$CLASS)
+abs_freq
+
+# Relative frequencies
+rel_freq <- prop.table(abs_freq)
+rel_freq
+
+# Percentage Frequencies
+perc_freq <- prop.table(abs_freq) * 100
+perc_freq
+```
+
+A `bar plot` is a suitable representation for categorical variables like CLASS:
+```{r}
+barplot(abs_freq, 
+        main = "Distribution of Insurance Risk Classes",
+        xlab = "Risk Class",
+        ylab = "Frequency",
+        col = "steelblue",
+        las = 2)  # Rotate x-axis labels
+```
+
+## Distribution of Claim Amounts (`PAID`)
+
+We now look at the PAID variable, representing claim amounts.
+We can represent it graphically using a `histogram`.
+```{r}
+# Basic histogram for PAID variable
+hist(AutoClaims$PAID, 
+     breaks = 50,
+     main = "Distribution of Insurance Claim Costs",
+     xlab = "Claim Cost ($)",
+     ylab = "Frequency",
+     col = "lightblue",
+     border = "black")
+```
+
+We can add mean, median, and quartiles to better understand the spread:
+```{r}
+mean(AutoClaims$PAID)
+median(AutoClaims$PAID)
+
+hist(AutoClaims$PAID, 
+     breaks = 50,
+     main = "Distribution of Insurance Claim Costs",
+     xlab = "Claim Cost ($)",
+     ylab = "Frequency",
+     col = "lightblue",
+     border = "black",
+     xlim = c(0, 10000)
+ )
+abline(v = mean(AutoClaims$PAID), col = "red", lwd = 2, lty = 2) 
+abline(v = median(AutoClaims$PAID), col = "blue", lwd = 2, lty = 2)
+abline(v = quantile(AutoClaims$PAID, 0.25), col = "orange", lwd = 2, lty = 2)
+abline(v = quantile(AutoClaims$PAID, 0.75), col = "orange", lwd = 2, lty = 2)
+```
+
+Red line: mean; Blue line: median; Orange lines: 1st and 3rd quartiles.
+
+## Frequency Distribution in Classes
+
+We create custom intervals for `PAID` to better understand the distribution of claims considering the following classes: [0,5000] (5000,10000] (10000,20000] (20000,50000] (50000,100000] (100000,+)
+```{r}
+# Define class intervals
+breaks <- c(0, 5000, 10000, 20000, 50000, 100000, Inf)
+labels <- c("[0,5000]", "(5000,10000]", "(10000,20000]", 
+            "(20000,50000]", "(50000,100000]", "(100000,+)")
+
+
+# Create classes
+AutoClaims$PAID_classes <- cut(AutoClaims$PAID, 
+                               breaks = breaks, 
+                               labels = labels, 
+                               include.lowest = TRUE)
+AutoClaims$PAID_classes[1:10]
+
+# Compute frequency distributions
+abs_freq_paid <- table(AutoClaims$PAID_classes)
+rel_freq_paid <- prop.table(abs_freq_paid)
+perc_freq_paid <- prop.table(abs_freq_paid) * 100
+
+abs_freq_paid
+```
+
+Visualizing these classes:
+```{r}
+barplot(abs_freq_paid, 
+        main = "Distribution of PAID",
+        xlab = "Paid",
+        ylab = "Frequency",
+        col = "steelblue",
+        las = 2)  # Rotate x-axis labels
+```
+
+Feel free to experiment with other intervals to see how the distribution changes.
+We can also compute densities to normalize the distributions by class width:
+```{r}
+#Compute class widths
+class_widths <- diff(breaks)
+#Given that the last one has no upper bound set the width of the second to last one
+class_widths[length(class_widths)] <- class_widths[length(class_widths)-1]  # Use previous width for last open interval
+#Create densities
+densities <- as.numeric(rel_freq_paid) / class_widths
+
+barplot(densities,
+        names.arg = names(abs_freq_paid),
+        main = "Density Plot of Insurance Claim Costs by Classes",
+        xlab = "Cost Classes ($)",
+        ylab = "Density",
+        col = "lightgreen",
+        las = 2)
+```
+
+## Comparing Claim Amounts by Gender
+
+We can compare claim distributions for males and females:
+```{r}
+par(mfrow=c(1,2))
+
+hist(AutoClaims$PAID[AutoClaims$GENDER=="M"], col = "lightblue", 
+     include.lowest = TRUE, main="MALE",
+     ylim = c(0, 4000),
+      xlab = "Paid Claim")
+hist(AutoClaims$PAID[AutoClaims$GENDER=="F"], col = "lightpink",
+     include.lowest = TRUE, main="FEMALE",
+     ylim = c(0, 4000),
+     xlab = "Paid Claim")
+
+```
+
+## Age and Gender Comparison
+
+`Boxplots` help visualize the age distribution by gender:
+```{r}
+boxplot(AGE ~ GENDER, data = AutoClaims,
+        main = "Age by Gender",
+        xlab = "Gender",
+        ylab = "Age",
+        col = c("lightpink", "lightblue"),
+        border = "black",
+        notch = FALSE)
+```
+
+## Claim Amount by Risk Class
+
+Finally, we compare the square root of `PAID` by `CLASS` to improve readability:
+```{r}
+boxplot(sqrt(PAID) ~ CLASS, data = AutoClaims,
+        main = "Square root of PAID by CLASS",
+        xlab = "Class",
+        ylab = "sqrt Paid",
+        border = "black",
+        notch = FALSE)
+```
