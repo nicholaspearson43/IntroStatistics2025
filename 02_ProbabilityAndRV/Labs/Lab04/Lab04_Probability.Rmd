@@ -1,0 +1,418 @@
+---
+title: "Introduction to Probability in R"
+author: "Nicholas Pearson"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(dslabs)
+
+```
+
+### **Understanding Discrete Probability with Monte Carlo Simulations**
+In this lab, we will explore discrete probability concepts and learn to use a Monte Carlo simulation. \
+Discrete probabilities include the scenarios in which the outcomes are distinct and countable (therefore, discrete). They typically include categorical data as oucome, for example "The result of a toss of a coin can either be a HEAD or a TAIL".
+
+#### **Relative Frequency as Probability**
+
+Probability in a mathematical sense can be thought of as relative frequency. For example, with an urn containing 2 red beads and 3 blue beads, the probability of drawing a red bead, assuming each draw is independent and all outcomes are equally likely, is $\cfrac{2}{5}$ or 40%. As we have seen, this implies that probabilities can be computed as the ratio of the number of favorable outcomes with respect to the total number of outcomes (or draws): $$\mbox{Pr}(A)=\cfrac{N_A}{N}$$.
+
+#### **Probability Notation and Distribution**
+
+In statistical terms:
+
+* $\mbox{Pr}(A)$ denotes the probability of occurrence of an event $A$.
+
+* Events are outcomes or sets of outcomes from a random process.
+
+For categorical outcomes and discrete scenarios, probabilities can be assigned based on the relative frequency of each category, defining a *probability distribution*. For example, if the voter population consists of 44% Democrats, 44% Republicans, 10% undecided, and 2% Green Party, these percentages directly translate into their respective probabilities of being randomly called in a survey.
+
+#### **Monte Carlo Simulations**
+
+Monte Carlo simulations are useful tools to approximate the probability of an event. It simulates the random process a large number of times ( generally at least $100$) and observing the frequency of the outcomes. MC simulations are useful when analytical solutions are impractical or hard to find.
+
+
+**Example: Monte Carlo Simulation - Drawing from an Urn**
+
+1. **Creating the Urn**:
+```{r,eval=TRUE}
+    # Create a vector representing beads in an urn
+    beads <- rep(c("red", "blue"), times = c(2,3))
+```
+
+2. **Simulating One Random Draw**:
+```{r,eval=TRUE}
+    # Simulate one random draw from the urn
+    sample(beads, 1)
+```
+
+Try running the previous line of code multiple times (say $10$): do you expect the result to be always the same?
+
+
+3. **Repeating the Experiment**:
+    Use the `replicate` function to simulate the random draw multiple times. What is the outcome?
+```{r,eval=TRUE}
+    # Number of simulations
+    B <- 10000
+    
+    # Replicate the random sampling B times
+    events <- replicate(B, sample(beads, 1))
+```
+
+4. **Analyzing the Results**:
+    Use `table` to count occurrences and `prop.table` to compute the proportions. What is the outcome?
+```{r,eval=TRUE}
+    # Tabulate the results
+    tab <- table(events)
+    
+    # Compute the  proportions
+    proportions <- prop.table(tab)
+    
+    proportions
+```
+We have obtained an empirical view of the probabilities.
+
+The results from this simulation should closely align with the theoretical probabilities as the parameter $B$ (the number of simulations) increases, illustrating the law of large numbers.
+To test this hypothesis, try running the experiment with $B\in(10,100,1000,10000)$.
+
+#### **Practical Implications**
+
+Monte Carlo simulations are a powerful tool in statistics:
+* They provide a way to estimate probabilities when direct calculation is complex or unfeasible.
+* They help understanding the behavior of systems over many iterations, offering insights into the mechanics of random processes.
+
+This method is extensively used in fields ranging from finance to physics, wherever the systems modeled involve randomness and probabilistic behaviors.
+
+### Setting the random seed
+
+Before we continue, we will briefly explain the following important line of code:
+
+```{r}
+set.seed(42) 
+```
+
+We use random number generators. This implies that many of the results presented can potentially change by chance. This is actually fine, given that the results are random and change over time. However, if you want to ensure that results are consistent with each run, you can set R's random number generation seed to a specific number. Above we set it to 42. We want to avoid using the same seed every time. 
+
+You can learn more about setting the seed by looking at the documentation:
+
+```{r,eval=FALSE}
+?set.seed
+```
+
+
+### **Sampling with and Without Replacement**
+
+#### **Sampling Without Replacement**
+
+By default, the `sample` function in R performs sampling without replacement. This means that once an item (e.g., a bead) is selected, it cannot be selected again within the same sample. 
+
+If you consider the drawing of beads from an urn, a sampling without replacement means that, once the bead has been extracted, is kept aside and not reinserted in the urn. 
+
+How many draws without replacements can you do if the urn initially has $10$ beads?
+
+**Example: Sampling Without Replacement**
+
+```{r,eval=TRUE}
+# Assume beads vector is defined as follows:
+beads <- rep(c("red", "blue"), times = c(2,3))
+
+# Sample five beads without replacement
+sample(beads, 5)
+```
+
+Running the `sample(beads, 5)` command multiple times will shuffle the beads, but the output will always contain exactly three blue and two red beads. This is because there are only five beads in total, and all must be chosen.
+
+**Attempting to Sample More Than Available**
+
+```{r,eval=FALSE}
+# Attempting to sample six beads from a collection of five
+sample(beads, 6)
+
+`Error in sample.int(length(x), size, replace, prob) :    cannot take a sample larger than the population when 'replace = FALSE'`
+```
+This code will return an error because it is not possible to sample more beads than are available in the urn without replacement.
+
+#### **Sampling With Replacement**
+
+Sampling with replacement allows each item to be selected more than once. After an item is chosen, it is "returned" to the original dataset, allowing it to be chosen again. This method is essential when simulating independent repeated trials of an experiment.
+
+If you consider the drawing of beads from an urn, a sampling with replacement means that, once the bead has been extracted, it is put back in the urn. 
+
+How many draws with replacements can you do if the urn initially has $10$ beads?
+
+**Example: Sampling With Replacement**
+```{r,eval=TRUE}
+# Define the number of trials
+B <- 10000
+
+# Sample B beads with replacement
+events <- sample(beads, B, replace = TRUE)
+
+# Calculate and display the proportions of each bead color
+proportions <- prop.table(table(events))
+proportions
+```
+Is this the same as running the following chunk of code (the same as above)?
+
+```{r,eval=TRUE}
+# Define the number of trials
+B <- 10000
+
+# Sample B beads with replacement
+events <- replicate(B, sample(beads, 1))
+
+# Calculate and display the proportions of each bead color
+proportions <- prop.table(table(events))
+proportions
+```
+
+#### **Independence in Probability**
+
+Two events are independent if the occurrence of one does not affect the probability of occurrence of the other. For instance, in the case of flipping a coin, each flip is independent of the others. 
+
+#### **Non-Independence**
+
+In contrast, many real-world scenarios exhibit non-independence. For example, drawing cards from a deck without replacement is a typical scenario where the outcome of one draw affects the probabilities in subsequent draws. This is because the composition of the deck changes with each draw, thus altering the probabilities.
+
+#### **Conditional Probabilities**
+
+Conditional probabilities come into play when events are not independent. The probability of an event occurring, given that another event has already occurred, is calculated using:
+
+$$
+\mbox{Pr}(B \mid A) = \frac{\mbox{Pr}(A \cap B)}{\mbox{Pr}(A)}
+$$
+
+This formula is pivotal in scenarios where prior information about one event influences the outcome of another.
+
+#### **Application in Card Games**
+
+In card games like Blackjack, understanding conditional probabilities is crucial. For instance, the probability of drawing an Ace followed by a 10-point card is computed as:
+
+$$
+\mbox{Pr}(\text{Ace then 10-point-card}) = \mbox{Pr}(\text{Ace}) \times \mbox{Pr}(\text{10-point-card} \mid \text{Ace}) = \frac{1}{13} \times \frac{16}{51}
+$$
+In fact, in a 52-card deck there are 4 Aces and 16 cards which hold value of 10 points (10, Jack, Queen and King).
+
+
+#### **Addition and Multiplication Rules**
+
+**Multiplication Rule:** \
+- Used when you want to find the probability of two or more events happening together. \
+- For independent events: $\mbox{Pr}(A \cap B) = \mbox{Pr}(A) \times \mbox{Pr}(B)$ \
+- For dependent events: $\mbox{Pr}(A \cap B) = \mbox{Pr}(A) \times \mbox{Pr}(B \mid A)$ \
+
+**Addition Rule:** \
+- Useful for determining the probability of either of two events occurring. \
+- $\mbox{Pr}(A \cup B) = \mbox{Pr}(A) + \mbox{Pr}(B) - \mbox{Pr}(A \cap B)$ \
+
+This rule accounts for the overlap between events, ensuring they are not double-counted.
+
+#### **Practical Considerations**
+
+When applying these rules, it's essential to accurately assess whether events are independent or dependent. Misjudging this can lead to incorrect probabilities. 
+
+#### **Illustration with a Venn Diagram**
+
+The addition rule is visually represented by a Venn diagram, where the overlap is subtracted to correct for double-counting:
+
+```{r,eval=TRUE}
+library(VennDiagram)
+draw.pairwise.venn(area1 = 100, area2 = 100, cross.area = 30, category = c("Event A", "Event B"), fill = c("red", "blue"))
+```
+
+### **Combinations, Permutations, and Probability Calculations in R**
+
+**Permutations** refer to all possible arrangements of a set where the order is important. **Combinations**, on the other hand, are selections where the order does not matter.
+
+#### **Creating a Deck of Cards in R**
+
+To simulate card games or solve probability puzzles involving decks, you first need a virtual deck. Here’s how you can create one in R:
+
+```{r,eval=TRUE}
+# Define suits and ranks
+suits <- c("Diamonds", "Clubs", "Hearts", "Spades")
+numbers <- c("Ace", "Deuce", "Three", "Four", "Five", "Six", "Seven", 
+             "Eight", "Nine", "Ten", "Jack", "Queen", "King")
+
+# Create a deck using expand.grid
+deck <- expand.grid(number = numbers, suit = suits)
+deck <- with(deck, paste(number, suit))
+```
+
+This deck is now ready for drawing cards or simulating games.
+
+#### **Calculating Basic Probabilities**
+
+The probability of drawing a King as the first card from a standard deck:
+
+```{r,eval=TRUE}
+# Probability of drawing a King
+kings <- paste("King", suits)
+prob_king_first <- mean(deck %in% kings)
+prob_king_first
+
+(prob_king_first == 4/52)
+```
+
+#### **Simulating Draws and Calculating Conditional Probabilities**
+
+When calculating probabilities for sequences of events (like drawing cards in order), permutations help in understanding the different outcomes:
+
+```{r,eval=TRUE}
+library(gtools)
+
+# All possible ways to draw two cards (the order matters)
+hands <- permutations(52, 2, v = deck)
+
+# Extract first and second cards
+first_card <- hands[, 1]
+second_card <- hands[, 2]
+
+# Probability that the first card is a King
+prob_first_king <- mean(first_card %in% kings)
+
+# Probability that the second card is also a King, given the first was a King
+prob_second_king_given_first <- mean(second_card %in% kings & first_card %in% kings) / prob_first_king
+
+prob_second_king_given_first
+
+(prob_second_king_given_first==(3/51))
+```
+
+This code effectively computes the conditional probability of drawing a King as the second card after the first one was also a King.
+
+### **The Birthday Problem: Monte Carlo Simulation and Exact Computation**
+
+The birthday problem is a classic example in probability theory that questions the likelihood of at least two people in a group sharing the same birthday. Given a classroom of 50 people, the probability that at least two people share the same birthday is surprisingly high. Let's explore this problem using both Monte Carlo simulations and exact calculations.
+
+#### **Monte Carlo Simulation**
+
+1. **Simulation Setup**:
+   * Each birthday is represented as a number between 1 and 365.
+   * For 50 people, birthdays are randomly chosen with replacement from this range.
+
+2. **Detecting Duplicates**:
+   * Use the `duplicated` function to check if any birthday is repeated within a sample.
+
+3. **Running Multiple Simulations**:
+   * To get a reliable estimate of the probability, repeat the sampling process many times (e.g., 10,000 times) and calculate the proportion of samples where at least one birthday is duplicated.
+
+```{r,eval=TRUE}
+# Define the number of trials and group size
+B <- 10000
+n <- 50
+
+# Function to check for duplicate birthdays
+same_birthday <- function(n) {
+  bdays <- sample(1:365, n, replace = TRUE)
+  any(duplicated(bdays))
+}
+
+# Perform the simulations
+results <- replicate(B, same_birthday(n))
+probability <- mean(results)
+probability
+```
+
+This simulation will provide an estimate of the probability that in a group of 50 people, at least two will share the same birthday.
+
+#### **Exact Calculation**
+
+The exact calculation involves computing the probability that no two people share a birthday and subtracting this from 1.
+
+1. **Probability of Unique Birthdays**:
+   * Start with the probability that the first person has a unique birthday, which is always 1.
+   * The second person must have a different birthday than the first, which is $\cfrac{364}{365}$.
+   * Continue this for all 50 people.
+
+2. **Formula for Non-shared Birthdays**:
+   * The probability that all birthdays are unique is the product of decreasing probabilities as more birthdays are taken into account.
+
+```{r,eval=TRUE}
+# Exact probability calculation
+exact_prob <- function(n) {
+  days_available <- 365
+  prob_unique <- prod((days_available: (days_available - n + 1)) / days_available)
+  1 - prob_unique
+}
+
+# Applying this function to a group of 50
+exact_probability <- exact_prob(50)
+exact_probability
+```
+
+#### **Comparison of Probabilities and Group Size Exploration**
+
+To explore how the probability changes with different group sizes and to find the smallest group size where the probability exceeds 50% and 75%, you can calculate probabilities for a range of group sizes.
+
+```{r,eval=TRUE}
+# Range of group sizes
+group_sizes <- 1:100
+
+# Calculating probabilities for each group size
+probabilities <- sapply(group_sizes, exact_prob)
+
+# Finding group size with more than 50% and 75% probability
+size_50 <- min(which(probabilities > 0.5))
+size_50
+
+size_75 <- min(which(probabilities > 0.75))
+size_75
+```
+
+#### **Visualization**
+
+Visualizing these probabilities against group sizes helps illustrate how the probability of shared birthdays increases with group size.
+
+
+```{r}
+plot(group_sizes, probabilities, type="l", main="Probability of Shared Birthdays vs. Group Size", xlab="Number of People", ylab="Probability")
+abline(h=c(0.50, 0.75), col=c("red", "blue"), lty=2)
+```
+
+
+This plot will show how quickly the probability approaches 1 as the number of people in the group increases, highlighting the counterintuitive nature of the birthday problem.
+
+
+## Exercises
+
+Answer the following questions with code!
+
+1\. Consider an urn composed of 3 cyan beads, 5 magenta ones and 7 yellow ones. Assume that one bead is being drawn at random from this urn. What is the probability that the bead is cyan?
+
+2\. What is the probability that the bead is not be cyan?
+
+3\. Consider the scenario in which two subsequent draws are made (without replacement). What is the probability of extracting as first a cyan bead and as second a non-cyan one?
+
+
+4\. Does the probability change if the draws are assumed to be made with replacement?
+
+
+5\. Two events $A$ and $B$ are independent if $\mbox{Pr}(A \cap B) = \mbox{Pr}(A) P(B)$. Under which situation are the draws independent?
+
+a.  Drawing without replacement.
+b.  Drawing with replacement.
+c.  Neither.
+d.  Both.
+
+
+6\. Assume that 5 beads have been drawn from the urn with replacement and all of them were yellow. What is the probability that the next bead will be yellow? and that it won't be yellow?
+
+
+7\. If you roll a 6-sided dice six times, what is the probability of not rolling a 6?
+
+8\. Two teams, let's say the Celtics and the Cavs, are playing a seven game series. The Cavs are a better team and have a 60% chance of winning each game. What is the probability that the Celtics will win **at least** one game?
+
+9\. Create a Monte Carlo simulation to confirm your answer to the previous problem. Use `B <- 10000` simulations. Hint: use the following code to generate the results of the first four games:
+
+```{r, eval=FALSE}
+celtic_wins <- sample(c(0,1), 4, replace = TRUE, prob = c(0.6, 0.4))
+```
+
+The Celtics must win one of these 4 games.
+
+10\. Two teams, say the Cavs and the Warriors, are playing a seven game championship series. The first to win four games, therefore, wins the series. The teams are equally good so they each have a 50-50 chance of winning each game. If the Cavs lose the first game, what is the probability that they win the series?

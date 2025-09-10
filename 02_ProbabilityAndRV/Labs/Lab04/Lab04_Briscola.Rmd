@@ -1,0 +1,169 @@
+---
+title: "Exercise - The Briscola Game"
+author: "Nicholas Pearson"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, eval=FALSE)
+```
+
+## The Briscola Game
+
+Briscola is a popular italian card game. It is played with a deck of cards of the following form: \
+
+- there are four seeds: Sticks (Bastoni), Coins (Denari), Cups (Coppe) and Swards (Spade) \
+
+- for each seed there are 10 cards: Ace (11 points), Three (10 points), King (4 Points), Knight (3 points), Jack (2 points) and then Seven, Six, Five, Four, Two (0 points each) \ 
+
+At the start of each game, one card is randomly extracted and its seed becomes the Briscola (the dominant seed for the game).
+
+1\. Create the deck of cards in R.
+
+```{r}
+seeds <- c("Sticks", "Coins", "Cups", "Swards")
+numbers <- c("Ace", "Three", "King", "Knight", "Jack", "Seven", "Six", "Five", "Four", "Two")
+
+deck <- expand.grid(number = numbers, suit = seeds)
+deck <- with(deck, paste(number, suit))
+
+deck
+```
+
+
+2\. What is the probability that the Briscola is "Coins"? And that it is not "Coins"?
+
+```{r}
+coins <- paste(numbers, "Coins")
+
+prob_briscola_coins <- mean(deck %in% coins)
+prob_briscola_coins
+
+prob_briscola_coins == 1/length(seeds) #one seed over the four possible ones
+
+prob_briscola_no_coins <- 1 - prob_briscola_coins
+prob_briscola_no_coins
+
+```
+
+
+Assume now that you are working with the full 40 card deck (no Briscola draw).
+
+3\. What is the probability of drawing an Ace?
+```{r}
+aces <- paste("Ace", seeds)
+
+prob_ace_first <- mean(deck %in% aces)
+prob_ace_first
+
+prob_ace_first == 1/length(numbers) #one card over the ten possible cards (for each seed)
+```
+
+
+4\. Consider the drawing of two cards. What is the probability of drawing as second card an Ace knowing that the first card was not an Ace?
+```{r}
+library(gtools)
+
+# All possible ways to draw two cards (the order matters)
+hands <- permutations(40, 2, v = deck)
+
+# Extract first and second cards
+first_card <- hands[, 1]
+second_card <- hands[, 2]
+
+not_aces <- deck[!(deck %in% aces)]
+not_aces
+
+prob_not_ace <- 1 - prob_ace_first
+
+prob_ace_second <- mean(second_card %in% aces & first_card %in% not_aces)/prob_not_ace
+prob_ace_second
+
+prob_ace_second == 4/39 #once the first card is drawn, there are 39 cards left in the deck and the aces are still 4
+
+```
+
+5\. Consider the drawing of two cards. What is the probability of drawing two cards such that the sum of the corresponding points is zero?
+```{r}
+
+points <- c(11, 10, 4, 3, 2, 0, 0, 0, 0, 0)
+deck_points <- rep(points, 4)
+
+hands_points <- permutations(length(deck_points), 2, v = deck_points, set=FALSE, repeats.allowed = FALSE)
+first_card_points <- hands_points[,1]
+second_card_points <- hands_points[,2]
+
+sum_points <- first_card_points + second_card_points
+
+zero_points <- mean(sum_points == 0)
+zero_points
+
+zero_points == (20/40)*(19/39) #the probability of extracting one card that does not hold point is 20/40 (half of the deck), then the second draw is over 39 cards and those not holding points are 20-1=19
+```
+
+6\. Consider the drawing of two cards. What is the probability of drawing two cards such that the sum of the corresponding points is five?
+```{r}
+five_points <- mean(sum_points == 5)
+five_points
+
+five_points == (8/40)*(4/39) #the first card can be either a knight or a jack (8 cards in total) over the 40 possible ones. Once the card has been extracted, only the 4 cards of the other figure are available (over 39)
+```
+
+The game of Briscola works with hands of three cards per player. Assume that you are drawing the first three cards for yourself (the opposite player's hand and the Briscola card will be drawn after your hand).
+
+
+7\. What is the probability of drawing at least one card that holds points?
+```{r}
+
+hands_3_points <- permutations(40, 3, v=deck_points, set=FALSE, repeats.allowed = FALSE)
+
+sum_3_points <- hands_3_points[,1] + hands_3_points[,2] + hands_3_points[,3]
+
+one_card_points <- mean(sum_3_points>0)
+one_card_points
+
+one_card_points == (1-(20/40)*(19/39)*(18/38)) #we compute the probability of getting three cards with zero points (as above)
+
+```
+
+8\. What is the probability of drawing three Aces?
+```{r}
+three_aces <- mean(sum_3_points == 33)
+three_aces
+
+three_aces == ((4/40) * (3/39) * (2/38)) #for the first draw there are 4 aces over 40 cards. If one Ace is extracted, there are 3 aces remaining over 29 cards and - in the third draw - there are 2 aces over 38 cards
+
+```
+
+9\. What is the probability of drawing three cards of the same seed?
+```{r}
+deck_seeds <- rep(seeds, 10)
+
+hands_seeds <- permutations(length(deck_seeds), 3, v = deck_seeds, set=FALSE, repeats.allowed = FALSE)
+first_card_seeds <- hands_seeds[,1]
+second_card_seeds <- hands_seeds[,2]
+third_card_seeds <- hands_seeds[,3]
+
+first_pair <- first_card_seeds == second_card_seeds
+second_pair <- second_card_seeds == third_card_seeds
+
+same_seed <- mean((first_pair+second_pair)==2)
+same_seed
+
+same_seed == ((9/39)*(8/38))  # once the first card has been extracted, there remain 9 cards of the same seed over 39 cards, and at the third extraction there will be 8 cards remaining of that seed over 38 cards
+
+```
+
+10\. Consider now all the possible combinations of points that you can observe in a three cards draw. Compute the corresponding frequencies and plot the results with an appropriate graph.
+```{r}
+abs_freq <- table(sum_3_points)
+abs_freq 
+
+barplot(abs_freq, main="Point Distribution with 3 cards", xlab="Points", ylab="Frequency", col ="steelblue")
+
+prob <- prop.table(abs_freq)
+barplot(prob, main="Point Distribution with 3 cards", xlab="Points", ylab="Probability", col ="steelblue")
+
+
+```
