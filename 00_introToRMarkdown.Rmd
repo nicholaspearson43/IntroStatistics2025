@@ -1,0 +1,74 @@
+---
+title: "Intro to R Markdown"
+author: "Nicholas Pearson"
+date: "2025-09-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+R Markdown allows you to combine narrative text, code, and output in the same document. It supports flexible formatting options and control over code visibility.
+
+
+### Code Chunks
+R code is included in chunks using triple backticks. Backticks (ASCII 96) are not available on the italian keyboard so you can create a new chunk either using the GUI or by pressing `Ctrl+Alt+I` on a Windows machine. You can also name your chunks **but no two chunks can have the same name**.
+```{r cars}
+summary(cars)
+```
+In is also possible to run Python code.
+```{python}
+y = range(0, 10)
+for i in y:
+  print(i)
+```
+Chunk visibility:
+
+- `echo = TRUE`: show both code and output
+- `echo = FALSE`: hide code but show output
+- `include = FALSE`: run code, but show neither code nor output
+- `eval = FALSE`: show code, but don’t run it
+- `results = 'hide'`: run code but hide output
+
+### Text
+#### Text Formatting
+
+- **Bold** `**bold**` $\rightarrow$ bold
+- *Italic* `*italic*` $\rightarrow$ italic
+- <u>Underline</u> `<u>Underline</u>` $\rightarrow$ underline
+- `Code effect` ` `Code Effect` ` $\rightarrow$ code effect
+
+### Lists
+**Bullet Points**
+
+- B1
+- B2
+
+**Numbered Lists**
+
+1. One
+2. Two
+
+### Equations
+LaTeX-style math is supported:
+
+- Inline $\sigma = \sqrt{\sigma^2}$
+- Display (or centered)
+
+$$Z = \cfrac{X-\mu}{\sigma}$$
+A comprehensive cheat-sheet for LaTeX commands can be found here: `https://quickref.me/latex`.
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot. By removing `echo = False` we now get:
+```{r}
+plot(pressure)
+```
