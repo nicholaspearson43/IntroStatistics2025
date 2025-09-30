@@ -1,0 +1,334 @@
+---
+title: "Random Variables"
+author: "Nicholas Pearson"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Random variables
+A *random  variable* is a variable that can take on a different value based on the outcome of a random experiment. Mathematically speaking a random variable $X$ is a real-valued function on the space of all possible outcomes $\Omega$:
+$$X:\Omega\to\mathbb{R}$$
+
+They can be categorized in two main classes: *discrete* and *continous*.
+
+## Discrete random variables
+By definition, a discrete r.v. $X$ is a variable that have a finite or countable number of possible outcomes. Each variable is defined through the *probability mass function* (pmf) that is a rule that assignes probabilities to all possible values of $X$.
+
+$$f(x)=P(X=x_i)  \forall i=1,2, \dots, k \in \Omega$$
+
+where $i$'s are representing all possible outcomes of the random experiment. A probability mass function satisfies the following properties:
+
+- $P(X=X_i)\geq 0$ for all $i$
+- $\sum_i p(x_i)=1$
+
+To describe a discrete r.v., the *cumulative distribution function* (cdf) may also be used: it is a monotonic function that refers to the probability that $X$ will assume values less than or equal to a specific value.
+
+$$F(x)=Pr(X\leq x_i)$$
+
+Examples of discrete distribution are Bernoulli distribution, binomial distribution and Poisson distribution.
+
+In R there are useful built-in function for known distributions. Let's take as an example the binomial distribution.
+
+- `dbinom(x, size, prob, log=FALSE)` density $P(X=x)$
+- `pbinom(q, size, prob, lower.tail=TRUE, log.p=FALSE)` cumulative distribution function $P(X\leq  x)$
+- `qbinom(p, size, prob, lower.taile=TRUE, log.p=FALSE)` quantile function
+- `rbinom(n, size, prob)` random simulation
+
+$x,q$ are vectors of quantiles, $p$ is a vector of probabilites, $n$ is the number of observations, $size$ number of trials and $prob$ is the probability of success on each trial.
+
+For more details on these functions have a look at the help panel.
+
+## Example
+In an experiment, 12 dices are rolled simultaneously and the variable $X$ measures the number of times a $6$ is observed. What is the probability of observing at least 7 but no more than 9 times the phenomenon of interest? That is, compute $Pr(7\leq X \leq 9)$.
+
+```{r}
+pbinom(9, size=12, prob=1/6) - pbinom(6, size=12, prob=1/6)
+diff(pbinom(c(6,9), size=12, prob=1/6))
+```
+
+## Example
+Assume a coin is being tossed 20 times. What is the probability of observing Tail 6 times?
+
+```{r}
+n <- 20 #number of coin tosses
+x <- 6 #number of tails we want
+p <- 0.5 #probability of getting "Tail" in a single flip
+
+#with the formula
+probability <- choose(n,x)*p^x*(1-p)^(n-x)
+probability
+```
+
+What is the probability distribution? That is, evaluate the probability for each value that $X$ can assume.
+```{r}
+n <- 20
+x <- 0:20
+p <- 0.5
+
+p_dist <- choose(n,x)*p^x*(1-p)^(n-x)
+p_dist
+```
+Is this a valid probability distribution?
+```{r}
+sum(p_dist)
+```
+
+Plot the distribution:
+```{r}
+plot(x, p_dist, type="h", main="Binomial distribution (n=20, p=0.5)", xlab="x", ylab="f(x)", col="red")
+```
+
+Can we compute the same probabilities with built-in functions?
+```{r}
+dbinom(x=6, size=20, prob=0.5)
+dbinom(x=0:20, size=20, prob=0.5)
+sum(dbinom(x=0:20, size=20, prob=0.5))
+```
+
+What is the probability of observing Tails at most 3 times?
+```{r}
+sum(pbinom(0:3, 20, 0.5))
+```
+Is this the same as writing `pbinom(3, 20, 0.5)` ?
+
+What is the probability to observe a number of successes between 3 and 5?
+```{r}
+cdf_3 <- pbinom(0:3, 20, 0.5)
+cdf_5 <- pbinom (0:5, 20, 0.5)
+
+prob <- sum(cdf_5)-sum(cdf_3)
+prob
+```
+What does the cumulative distribution function look like?
+```{r}
+bin <- function(x) pbinom(x, size=n, prob=0.5)
+
+plot(-1:21, bin(-1:21), type="s", xlab="x", ylab="c.d.f.", main="")
+```
+
+Write a built in function that computes the probability of a binomial with parameters (x,n,p) and check if the results aligh with the built in function.
+
+```{r}
+binomial <- function(x, n, p){
+  choose(n,x)*p^x*(1-p)^(n-x)
+}
+binomial(5,20,0.5)
+
+dbinom(5, 20, 0.5)
+```
+Let's see how the parameter $p$ influences the distribution.
+
+```{r}
+par2<-par(mfrow=c(2,2),mar=c(4,3,3,3))
+ x=(0:20)
+ n<-20
+ plot(x,dbinom(x,n, 0.1),type="h",xlab="x",ylab="P(x)",ylim =c(0,.35),
+ main="Bin(n=20, p=0.1)")
+ plot(x,dbinom(x,n, 0.3),type="h",xlab="x",ylab="P(x)",ylim =c(0,.35),
+ main="Bin(n=20, p=0.3)")
+ plot(x,dbinom(x,n, 0.5),type="h",xlab="x",ylab="P(x)",ylim =c(0,.35),
+ main="Bin(n=20, p=0.5)")
+ plot(x,dbinom(x,n, 0.9),type="h",xlab="x",ylab="P(x)",ylim =c(0,.35),
+ main="Bin(n=20, p=0.9)")
+ par(par2)
+```
+
+What is we wanted to simulate $n$ tosses of a coin?
+```{r}
+sim <- rbinom(n=80, size=1, prob=0.5)
+sim
+```
+What is the success rate?
+```{r}
+sum(sim)/length(sim)
+```
+
+## Poisson distribution
+The Poisson random variable can be used to model the number of daily calls in a call center. If the lambda parameter is set to 1.6, what is the probability of observing zero calls during the day?
+
+```{r}
+lambda <- 1.6
+x <- 0
+
+dpois(x, lambda)
+```
+The structure of built-in function is the same as for the binomial.
+
+Write your own function to compute the probability of a Poisson with parameters (x, lambda).
+```{r}
+poisson <- function(x, lambda){
+  lambda^x * exp(-lambda)/factorial(x)
+}
+
+poisson(x, lambda)
+```
+
+What does the probability distribution looks like?
+
+```{r}
+x <- c(0:10)
+prob_dist <- dpois(x, lambda)
+
+plot(x, prob_dist, type="h", xlab="x", ylab="f(x)", main=expression(paste("Poisson: ", lambda, " = 1.6")))
+```
+
+Plot the distribution with lambda varying in $\lambda \in (0.5, 2, 3.5)$.
+
+```{r}
+par(mfrow=c(1,3))
+
+plot(x, poisson(x, lambda=0.5), type="h", xlab="x", ylab="f(x)", main=expression(paste("Poisson:",lambda,"=0.5")))
+
+plot(x, poisson(x, lambda=2), type="h", xlab="x", ylab="f(x)", main=expression(paste("Poisson:",lambda,"=2")))
+
+plot(x, poisson(x, lambda=3.5), type="h", xlab="x", ylab="f(x)", main=expression(paste("Poisson:",lambda,"=3.5")))
+```
+
+
+What is the probability of observing at least two calls with these values of lambda?
+```{r}
+x <- 0:1
+
+for (lambda in c(0.5, 2, 3.5)){
+print(1-sum(dpois(x, lambda=lambda)))
+  }
+```
+
+
+
+# Example
+With appropriate parameters, we can approximate a Binomial distribution with a Poisson with $\lambda = n*p$.
+
+```{r}
+n <- 100
+p <- 0.02
+x <- seq(0:20)
+
+plot(x, dpois(x, n*p), type="h", ylab="probability")
+points(x+.2, dbinom(x, n, p), type="h", col="red")
+```
+
+# Exercise
+Let's simulate the data coming from a Poisson distribution with mean $5$ and compare the results from the theoretical distribution.
+
+```{r}
+n<- 500
+dati.pois <- rpois(n,5)
+
+tab= table(dati.pois)
+tab
+
+plot(tab/n, ylab="Probability", xlab="x")
+
+#theorethical probability
+m = max(dati.pois)
+x=seq(0:m)
+
+points (x+0.2, dpois(x,5), type="h", col=2)
+```
+
+
+
+
+# Your turn!
+
+1\. Find the probability of winning exactly 19 times out of 25 coin tosses. 
+```{r}
+dbinom(19, 25, 0.5)
+```
+
+2\. What is the coin is unbalanced and the probability $P(T)=1/8)?
+```{r}
+dbinom(19, 25, 1/8) #if you are betting on tail
+1 - dbinom(19,25, 1/8) #if you are betting on head
+```
+
+3\. Find the probability of observing more than 10 heads out of 25 coin tosses (with a balanced coin).
+
+```{r}
+1-pbinom(10, 25, 0.5)
+```
+
+4\. Bob makes success in 60\% of his free-throw attempts. If he shoots 12 free throws, what is the probability that he achieves exactly 7 successes?
+```{r}
+dbinom(7, 12, 0.6)
+```
+
+5\. Suppose a bowler scores a strike on 30\% of its attempts when he bowls. If he bowls 10 times, what is the probability that the scores 4 or fewer strikes?
+
+```{r}
+pbinom(4, 10, 0.3)
+```
+
+
+6\. Find the 10th and 90th quantiles of a binomial distribution with 10 trials and probability of success 0.4.
+
+```{r}
+qbinom(0.10, size=10, prob=0.4)
+qbinom(0.90, size=10, prob=0.4)
+```
+
+7\. Generate a vector that shows the number of successes of 10 binomial experiments with 100 trials where the probability of success on each trial is 0.3. Find the mean number of successes in the 10 experiments. 
+```{r}
+results<-rbinom(10, size=100, prob=0.3)
+results
+
+mean(results)
+```
+
+8\. Suppose there are twelve multiple choice questions in an English class quiz. Each question has five possible answers and only one of them is correct. Find the probability of having exactly four correct answers by random attempts.  
+
+```{r}
+dbinom(4, 12, 1/5)
+```
+
+Compute the probability of getting all the questions right.
+```{r}
+dbinom(12, 12, 1/5)
+```
+9\. It is known that a shopping website makes 10 sales per hour. In one hors, what is the probability that 8 sales are made?
+```{r}
+dpois(8, lambda=10)
+```
+
+
+10\. What is the probability that more than 8 sales are made in one hour?
+```{r}
+1- ppois(8, 10)
+```
+
+11\. Consider that the number of visits on a web page is known to follow a Poisson distribution with mean 15 visits per hours. What is the probability of getting: a) 10 or less visits per hour? b) at least 20 visits per hour? c) less than 15 visits per hour? d) of getting between 10 and 20 visits per hour.
+
+```{r}
+a<- ppois(10, 15)
+a
+
+b<- 1-ppois(20, 15)
+b
+
+c<- ppois(14, 15)
+c
+
+d<-ppois(20, 15) - ppois(9, 15) #why 9 and not 10 ?
+d
+```
+
+
+12\. The expected number of cars entering the North Gate of the Yosemite Park is 33 per hour. What is the probability that 20 to 30 cars enter in an hour. Plot the distribution.
+
+```{r}
+ppois(30, 33)-ppois(19,33) #why 19 and not 20?
+
+
+success<- 0:60
+l=33
+plot(success, dpois(success, lambda=l), type="h")
+```
+
+
+
+
