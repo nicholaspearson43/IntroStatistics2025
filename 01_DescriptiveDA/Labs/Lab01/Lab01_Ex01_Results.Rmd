@@ -1,0 +1,96 @@
+---
+title: "Exercise 1"
+author: "Nicholas Pearson"
+date: "September 2025"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Ex 1
+The following exercises require loading the AutoBi data on automobile bodily injury claims in the R package insuranceData. 
+Get it by running install.packages("insuranceData").
+
+```{r}
+library(insuranceData)
+```
+**Load the data**
+```{r}
+data("AutoBi")
+```
+Use a suitable function to investigate the structure of the data.
+Then check the names, dimension and list the first 8 observations.
+Use the function summary() to obtain summary statistics of the numerical variables in a data frame.
+`Hint: str, names, dim, head`
+```{r}
+#Structure of the data
+str(AutoBi)
+#Names
+names(AutoBi)
+#Dimension
+dim(AutoBi) #1340 obs, 8 variables
+#First 8 obs
+head(AutoBi, 8)
+#Summary
+summary(AutoBi)
+```
+Pick the subset (try subset() function) of the data with:
+
+- Claimants represented by an attorney.
+- Only keep the variables MARITAL and CLMINSUR
+
+Remove all NAN's from the dataframe.
+How many observations are left?
+How many variables?
+```{r}
+#First Subset
+data <- subset(
+  AutoBi,
+  ATTORNEY != 2,
+  select = c("MARITAL", "CLMINSUR")                    
+         )
+str(data)
+
+#Drop NA
+clean_data <-na.omit(data)
+str(clean_data)
+```
+
+Create a new subset of the original dataset with:
+
+- Female claimants under 40 that are married or divorced
+- Have a loss greater than five thousands
+
+```{r}
+filtered_data <- subset(
+  AutoBi,
+  CLMSEX == 2 &
+    CLMAGE <= 40 &
+    (MARITAL == 1 | MARITAL == 4) &
+    LOSS > 5
+)
+str(filtered_data)
+```
+
+## Ex 2
+Load the Food.csv data in the environment. Make sure it is present in your working directory or provide the full path.
+```{r}
+Food <- read.csv("Food.csv")
+```
+Check the structure.
+```{r}
+str(Food)
+head(Food)
+```
+Use the function cbind() to add new variable to the Food data frame defined by transforming the variable weight (in pounds) into the weight expressed in kilograms (1 kg= 2.20462 pound).
+```{r}
+w_pounds <- Food$weight
+w_kg <- w_pounds/2.20462
+length(w_pounds)
+length(w_kg)
+
+Food <- cbind(Food, weight_kg =w_kg)
+str(Food)
+```
+
