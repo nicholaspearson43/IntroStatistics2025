@@ -1,0 +1,507 @@
+---
+title: "Statistical_Inference"
+author: "Nicholas Pearson"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Statistical Inference
+
+Let's have a look at how to perform statistical inference with R: we will focus on Confidence Intervals and Hypothesis Testing.
+
+## Confidence Intervals
+- Confidence Interval for the mean of a Normal distribution, with known variance.
+$$\left[ \bar{x} \pm z_{1-\alpha/2}\cdot\cfrac{\sigma}{\sqrt{n}}\right]$$
+
+- Confidence Interval for the mean of a Normal distribution, with unknown variance.
+$$\left[ \bar{x} \pm t_{n-1, 1-\alpha/2}\cdot\cfrac{s}{\sqrt{n}}\right]$$
+
+- Confidence Interval for a proportion $\pi$.
+$$\left[ \hat{\pi} \pm z_{1-\alpha/2}\cdot\sqrt{\cfrac{\hat{\pi}(1-\hat{\pi})}{n}}\right]$$
+
+Let's see in R the same example presented in the slides, about the gunpowder manufacturer. 
+```{r}
+
+# Sample
+X <- c(916, 892, 895, 904, 913, 916, 895, 885)
+
+# n, mean, sigma, alpha, z_{\alpha/2}
+n <- length(X)
+X_bar <- mean(X)
+sigma <- 12
+alpha <- 0.05
+z <- qnorm(alpha / 2, lower.tail = FALSE)
+
+# CI
+X_bar + c(-1, 1) * z * sigma / sqrt(n)
+
+```
+And with unknown variance:
+```{r}
+# Sample
+X <- c(916, 892, 895, 904, 913, 916, 895, 885)
+
+# n, mean, S', alpha, t_{\alpha/2;n-1}
+n <- length(X)
+X_bar <- mean(X)
+S_prime <- sd(X)
+alpha <- 0.05
+t <- qt(alpha / 2, df = n - 1, lower.tail = FALSE)
+
+# CI
+X_bar + c(-1, 1) * t * S_prime / sqrt(n)
+```
+
+
+Let's visualize 100 confidence intervals, each computed on a randomly generated sample from a Gaussian Distribution. 
+```{r}
+R <- 100
+n <- 10
+mu <- 5
+var <- 4
+
+plot(0,0, xlim=c(0,10), ylim=c(0,11), type="n", xlab="", ylab="", main = "100 CI for the mean of a Gaussian", cex.main =0.9)
+abline(v=mu)
+
+alpha <- 0.05
+lower <- vector(mode="numeric", length=R)
+upper <- vector(mode="numeric", length=R)
+l <- vector(mode="numeric", length=R)
+
+d <- 0
+for (i in 1:R){
+  x <- rnorm(n, mu, sqrt(var))
+  
+  lower[i] = mean(x) - qnorm(1-alpha/2)*sqrt(var/n)
+  upper[i] = mean(x) + qnorm(1-alpha/2)*sqrt(var/n)
+  
+  d = d+ 0.1 #vertical separation
+  l[i] = (mu> lower[i] & mu< upper[i]) #does the interval include the true value?
+  
+  lines(seq(lower[i], upper[i], length=100), rep(d, 100), col= (l[i]+1))
+  
+}
+
+```
+
+What is the percentage of interval that include the true value of the mean? Is this what you expected?
+```{r}
+
+R <- 1000 #increase the number of repetitions
+n <- 10
+mu <- 5
+var <- 4
+
+alpha <- 0.05
+lower <- vector(mode="numeric", length=R)
+upper <- vector(mode="numeric", length=R)
+l <- vector(mode="numeric", length=R)
+
+d <- 0
+for (i in 1:R){
+  x <- rnorm(n, mu, sqrt(var))
+  
+  lower[i] = mean(x) - qnorm(1-alpha/2)*sqrt(var/n)
+  upper[i] = mean(x) + qnorm(1-alpha/2)*sqrt(var/n)
+  
+  l[i] = (mu> lower[i] & mu< upper[i]) #does the interval include the true value?
+}
+
+mean(l)
+
+```
+
+In the Friuli Venezia Giulia Region, there were n = 10337 newborns, of which x = 5286 were born males. What is the confidence interval at level 95% of the proportion of male newborns ?
+
+```{r}
+n <- 10337
+males <- 5286
+
+p_male <- males/n
+
+std_p_male = sqrt(p_male*(1-p_male)/n)
+
+alpha=0.05
+
+lower = p_male - qnorm(1 - alpha/2)*std_p_male
+upper = p_male + qnorm(1 - alpha/2)*std_p_male
+
+lower
+upper
+```
+
+
+
+
+## Your turn!
+
+0\. Replicate the graph titled ""100 CI for the mean of a Gaussian"" for the case in which the variance is unknown.
+
+```{r}
+
+R <- 100
+n <- 10
+mu <- 5
+var <- 4
+
+plot(0,0, xlim=c(0,10), ylim=c(0,11), type="n", xlab="", ylab="", main = "100 CI for the mean of a Gaussian", cex.main =0.9)
+abline(v=mu)
+
+alpha <- 0.05
+lower <- vector(mode="numeric", length=R)
+upper <- vector(mode="numeric", length=R)
+l <- vector(mode="numeric", length=R)
+
+d <- 0
+for (i in 1:R){
+  x <- rnorm(n, mu, sqrt(var))
+  
+  std <- sd(x)
+  
+  lower[i] = mean(x) - qt(1-alpha/2, df = n-1)*std/(sqrt(n))
+  upper[i] = mean(x) + qt(1-alpha/2, df = n-1)*std/(sqrt(n))
+  
+  d = d+ 0.1 #vertical separation
+  l[i] = (mu> lower[i] & mu< upper[i]) #does the interval include the true value?
+  
+  lines(seq(lower[i], upper[i], length=100), rep(d, 100), col= (l[i]+1))
+  
+}
+
+```
+
+
+1\.  During the quality control process carried out in a mobile phone company, it turned out that 6 out of 120 mobiles randomly selected were defective. Obtain a $95\%$ confidence interval for the proportion of defective mobiles in the manufacturing process of this company.
+
+
+```{r}
+n = 120
+p_hat = 6/n
+
+p_hat 
+
+std_p_hat = sqrt(p_hat*(1-p_hat)/n)
+
+alpha=0.05
+
+lower = p_hat - qnorm(1 - alpha/2)*std_p_hat
+upper = p_hat + qnorm(1 - alpha/2)*std_p_hat
+
+lower
+upper
+
+```
+
+2\. During a scholarship assessment, the final grades of the students from a school are being evaluated. Assuming that the final grades follow approximately a normal distribution, compute the confidence interval for the mean of the final grades from the following sample (do both a CI at level 95\% and 99\%),
+
+```{r}
+grades <- c(6.2, 7.3, 5.5, 6.7, 9.0, 7.1, 5.0, 6.3, 7.2, 7.5, 8.0, 7.9, 6.5, 6.1, 7.0)
+```
+
+
+
+```{r}
+mean = mean(grades)
+std = sd(grades)
+n = length(grades)
+
+alpha = 0.05
+CI_95 = mean +c(-1,1)*qt(1-alpha/2, df = n-1)*std/sqrt(n)
+CI_95
+
+alpha = 0.01
+CI_99 = mean +c(-1,1)*qt(1-alpha/2, df = n-1)*std/sqrt(n)
+CI_99
+
+
+```
+
+3\. The management of a medical clinic wants to estimate the average number of days required to treat patients aged 25 to 34 years old. A study conducted on 500 patients at the clinic with these ages provided $\bar{X}=5.4$ and $S^2 = 3.1$ days. Obtain a confidence interval at level 0.95 for the mean stay time of the patients. 
+
+```{r}
+mean = 5.4
+var = 3.1
+
+n = 50
+
+alpha = 0.05
+CI_95 = mean +c(-1,1)*qt(1-alpha/2, df = n-1)*sqrt(var/n)
+CI_95
+
+```
+
+4\. A poll was made in the fall of 1979 by the Presidential Commission about the retirement policy in the USA. The poll revealed that a large proportion of citizens was very pessimistic about their retirement prospects. When interviewed if they believed that their retirement pension was going to be sufficient,  62.9\% of the 6100 interviewed citizens answered negatively. Compute a 95 \% confidence interval for the proportion of citizens that believed that their pension would not be sufficient.
+
+```{r}
+
+n = 6100
+p_hat = 62.9/100
+
+var_p_hat = (p_hat)*(1-p_hat)/n
+
+alpha = 0.05
+CI_95 = p_hat + c(-1,1)*qnorm(1-alpha/2)*sqrt(var_p_hat)
+CI_95
+
+
+```
+
+
+## Hypothesis Testing
+
+Built in R functions: \
+- `t.test` t test \
+- `var.test`: F test \
+- `chisq.test` : Pearson's Chi-Squared test \
+- `ks.test`: Kolmogorov-Smirnov test \
+
+There are many statistical tests we could do, let's stick to the simpler ones. 
+
+
+```{r}
+pesif <- c(2800, 2700, 2870, 3270, 3030, 3810, 2900, 3350, 3200, 3200, 2430, 3350, 3420)
+
+
+#We need to verify that the population is distributed as a Normal with due parameters.  
+qqnorm(pesif, main="qq-plot (female)", xlab="theoretical quantiles", ylab="observed quantiles", cex.main=0.9)
+qqline(pesif)
+
+
+```
+
+
+$$H_0: \mu = 3000$$
+$$H_1: \mu > 3000$$
+
+```{r}
+t.test(pesif, mu=3000, alternative="greater")
+```
+
+
+We know that:
+$$T = \cfrac{\bar{X}-\mu}{\sqrt{\cfrac{S^2}{n}}} \sim t_{n-1} $$
+
+and the p-value for a right-sided test:
+$$1-t_{n-1}(T_{obs})$$
+
+```{r}
+n <- length(pesif)
+
+t.oss <- sqrt(n)*(mean(pesif)-3000)/sqrt(var(pesif))
+t.oss
+
+1 - pt(t.oss, df=n-1)
+
+```
+```{r}
+par(mfrow=c(1,2)) 
+
+curve(dt(x,df=n-1),xlim=c(-5,5),ylab="", main="PDF Student't (n-1 dof)",lwd=2)
+abline(v=qt(0.95,df=n-1), col=2)
+abline(v=t.oss,col=1, lty=2)
+
+legend("topleft",c("crit.","obs."),lty=c(1,2),col=c(2,1),cex=.8)
+
+curve(pt(x,df=n-1),xlim=c(-5,5),ylab="", main="CDF Student't (n-1 dof)",lwd=2)
+abline(v=qt(0.95,df=n-1), col=2)
+abline(v=t.oss, col=1, lty=2)
+legend("topleft",c("crit.","obs."), lty=c(1,2), col=c(2,1), cex=.8)
+
+
+```
+
+## A new hypothesis test : difference between two means
+
+Assume that there are two distinct populations, for which you'd like to test if there is a significant different between the two means. Assume that both populations can be described by a **Normal distribution** and that the **two variances are unknown, but equal**. 
+
+```{r}
+pesim = c(3250, 3050, 3850, 3650, 3000, 3600, 3350, 3850, 3840, 2400, 2900, 2800, 3900, 3940, 3400, 3840, 3500, 3170, 3250, 3970, 3710, 3750)
+```
+
+We should verify that this sample comes from a Normal distribution: let's use the qqplot again.
+Let's also plot the boxplots of the two samples: do you think that there could be a statistical difference between the means of the two groups?
+
+```{r}
+par(mfrow=c(1,2))
+qqnorm(pesim, main="qq-plot (male)", xlab="theoretical quantiles", ylab="observed quantiles")
+qqline(pesim)
+boxplot(pesim, pesif, names=c("male","female"), ylab="weight", main="Newborn weight")
+```
+
+Let's investigate the second theoretical assumption:
+```{r}
+var.test(pesim, pesif)
+```
+This test is used to verify that the two variances are, in fact, equal from a statistically significance standpoint. If the p-value is 0.5377, what is the result of the test? Should we accept the null hypothesis that the two variances are equal?
+
+The test of equality of the two means is the following:
+$$H_0 : \mu_D = \mu_m-\mu_f = 0$$
+$$H_1: \mu_D = \mu_m-\mu_f > 0$$
+
+The test statistic is:
+$$T = \cfrac{\bar{X_1}-\bar{X_2}}{\sqrt{\cfrac{(n_1+1)S_1^2 + (n_2+1)S_2^2}{n_1+n_2-2} (\cfrac{1}{n_1}+\cfrac{1}{n_2})}} \overset{H_0}{\sim} t_{n_1+n_2-2}$$
+
+```{r}
+ n1 = length(pesim)
+ s2m = var(pesim)
+ 
+ n2 = length(pesif)
+ s2f = var(pesif)
+ 
+ t.oss = (mean(pesim)- mean(pesif))/(sqrt((((n1-1)*s2m+(n2-1)*s2f )/ (n1+n2-2) )*(1/n1+1/n2)))
+ 
+ p.value=1-pt(t.oss, df=n1+n2-2)
+ p.value
+```
+What is the result of the test with this pvalue?
+
+
+Note that in R the whole test is just one line of code!
+```{r}
+t.test(pesim, pesif, mu=0, alternative="greater", var.equal=TRUE)
+
+```
+
+## Your Turn!
+
+5\. A chemical process has produced, on average, 800 tons of a chemical product per day. The production log for this week registered 785, 805, 790, 793 and 802 tons. Is the data indicating the the average production has gone below 800 tons? Carry out an hypothesis test at level 5\%.
+
+
+```{r}
+x <- c(785, 805, 790, 793, 802)
+
+t.test(x, mu=800, alternative="less")
+
+
+```
+
+6\. A study was conducted by the Florida Fish and Wildlife Conservation Commission for estimating the quantity of DDT found in the brain tissues of brown pelicans. The following results are derived from two populations (for each, normality is assumed, as well as equal variances).
+```{r}
+n1 <- 10
+mean1 <-  0.041
+std1 <- 0.021
+
+n2 <- 13
+mean2 <- 0.026
+std2 <- 0.006
+```
+Test the hypothesis of no difference in the mean DDT quantities found in young (population 1) and baby (population 2) pelicans against the alternative that the young pelicans show a higher average (set $\alpha=0.05$).
+
+
+```{r}
+ t.oss = (mean1- mean2)/(sqrt(((n1-1)*std1**2+(n2-1)*std2**2)/ (n1+n2-2) )*(1/n1+1/n2))
+ 
+ p.value=1-pt(t.oss, df=n1+n2-2)
+ p.value
+
+```
+
+7\. A psychological study was carried out in order to compare the response times (in second) of men and woman with respect to certain stimulus. The results of the study are summarized in the following (assume normality and equal variance). Is the data showing enough evidence for suggesting a difference between the average response for men and women? Assume as alternative hypothesis that the men group has higher average response.
+
+```{r}
+n_male <- 42
+mean_male <- 3.8
+var_male <- 0.18
+
+n_female <- 45
+mean_female <- 3.6
+var_female <-0.14
+```
+
+
+```{r}
+t.oss = (mean_male- mean_female)/(sqrt(((n_male-1)*var_male+(n_female-1)*var_female )/ (n_male+n_female-2) )*(1/n_male+1/n_female))
+t.oss
+ 
+p.value=1-pt(t.oss, df=n_male+n_female-2)
+p.value
+```
+
+
+8\. Try to compute a function that returns the results of a hypothesis test on the mean of a standard normal distribution. Take into account the difference when the variance is known and unknown: can you write a single function to deal with both scenarios?
+
+Compare the results from the first example with:
+```{r}
+x <- c(916, 892, 895, 904, 913, 916, 895, 885)
+```
+Test both the case with known variance $\sigma=12$ and unknown one.
+
+```{r}
+CI_mean <- function(x, std = -1, alpha=0.05){
+  mean <- mean(x)
+  n <- length(x)
+  
+  if (std >0){
+    q_alpha <- qnorm(1 - alpha/2)
+  }
+  else if (std == -1) {
+    std <- sd(x)
+    q_alpha <- qt(1 - alpha/2, df=n-1)
+  }
+  
+  CI =  mean + c(-1,1)*q_alpha*std/sqrt(n)
+  
+  return(CI)
+}
+
+CI_mean(x, std=12)
+CI_mean(x)
+
+
+```
+9\. Write a function to compute the confidence interval at level $\alpha$ for a proportion. 
+
+```{r}
+CI_prop <- function(x, n, alpha=0.05){
+  p = x/n
+  std = sqrt(p*(1-p)/n)
+  
+  CI = p + c(-1,1)*qnorm(1-alpha/2)*std
+
+  return(CI)  
+}
+
+```
+10\.Write a function that returns the results of a hypothesis test on the mean of a standard normal distribution (with known variance) and alternative hypothesis "greater than". Try it out on a Normal distribution $\mathcal{N}(\mu . \sigma^2=100)$ assuming that the null hypothesis is $H_0: \mu = 10$.
+
+```{r}
+custom.test <-function(x, mu, std){
+  mean <- mean(x)
+  n <- length(x)
+  
+  Zobs <- sqrt(n)*(mean-mu)/std
+                      
+  pvalue <- 1 - pnorm(Zobs)
+  
+  return(c(mean, Zobs, pvalue))
+  
+}
+
+x <- rnorm(n=1000, mean=10, sd=100)
+
+custom.test(x, mu=10, std=sqrt(1000))
+
+
+
+```
+11\. For the sample `pesif` verify the null hypothesis $\mu=3000$ against the left unilateral alternative.
+
+```{r}
+t.test(pesif, mu=3000, alternative = "less")
+
+```
+12\. For the samples `pesif, pesim` verify the null hypothesis that $\mu_m-\mu_f = 0$ against the bilateral alternative.
+
+```{r}
+t.test(pesif, pesim, mu=0, var.equal=TRUE, alternative="two.sided")
+```
+
+
+
+
