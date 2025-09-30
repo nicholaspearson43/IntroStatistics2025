@@ -1,0 +1,257 @@
+---
+title: "Exercise 1"
+author: "Nicholas Pearson"
+date: "September 2025"
+output: html_document
+---
+
+# Part 1
+
+Load the data
+1. Load the `hotdog dataset`.
+```{r}
+load("hotdog.RData")
+```
+
+2. Describe the object `hotdog`:
+
+    - What type of object is it?
+    - How many observations does it contain?
+    - How many variables?
+    - What type of variables?
+  
+```{r}
+# Explore the dataset
+str(hotdog)
+summary(hotdog)
+```
+3. Compute the following for the variable `Type`
+
+    - Absolute frequency
+    - Relative frequency
+    - Percentage frequency
+    
+```{r}
+# Absolute frequency
+abs_freq <- table(hotdog$Type)
+
+# Relative frequency
+rel_freq <- prop.table(abs_freq)
+
+# Percentage frequency
+perc_freq <- prop.table(abs_freq) * 100
+
+# Display results
+abs_freq
+rel_freq
+perc_freq
+```
+
+4. Appropriate graphical representation
+
+What is the best way to visualize the variable Type? Create an appropriate plot.\
+```{r}
+barplot(
+  abs_freq,
+  main="Distribution of Hotdog Types",
+  col="steelblue"
+)
+```
+
+5. Graphical representation of Calorie
+Visualize the frequency distribution of the variable Calorie.\
+```{r}
+hist(
+  hotdog$Calorie,
+  main="Distribution of Calorie",
+  xlab="Calories",
+  col="lightblue"
+)
+```
+
+6. Frequency distribution in classes
+
+Divide the Calorie variable into the following classes:\
+[80,120], (120,140], (140,160], (160,200]\
+```{r}
+# Define class intervals
+breaks <- c(80, 120, 140, 160, 200)
+labels <- c("[80,120]", "(120,140]", "(140,160]", "(160,200]")
+
+#Create classes
+hotdog$Calorie_classes <- cut(hotdog$Calorie, breaks=breaks, labels=labels, include.lowest=TRUE)
+
+#Display first 10 entries
+head(hotdog$Calorie_classes)
+
+# Compute absolute frequency
+abs_freq_cal <- table(hotdog$Calorie_classes)
+abs_freq_cal
+```
+
+7. Plot barplot for the classes\
+```{r}
+barplot(
+  abs_freq_cal,
+  main="Calorie Distribution by Classes",
+  xlab="Calorie Classes",
+  ylab="Frequency",
+  col="lightgreen"
+)
+```
+
+8. Compute densities\
+
+```{r}
+class_widths <- diff(breaks)
+densities <- as.numeric(prop.table(abs_freq_cal)) / class_widths
+barplot(
+  densities,
+  names.arg=labels,
+  main="Density Plot of Calorie by Classes",
+  xlab="Calorie Classes",
+  ylab="Density",
+  col="orange"
+  )
+```
+
+9. Play around with interval widths\
+
+10. Compare histograms by Type
+Plot histograms of Calorie for each Type and compare them.\
+```{r}
+# Example: side-by-side histograms
+par(mfrow=c(1,3))
+hist(hotdog$Calorie[hotdog$Type=="Beef"], main="Beef", col="lightblue", xlab="Calories")
+hist(hotdog$Calorie[hotdog$Type=="Meat"], main="Meat", col="lightpink", xlab="Calories")
+hist(hotdog$Calorie[hotdog$Type=="Poultry"], main="Poultry", col="lightgreen", xlab="Calories")
+```
+
+# Part 2
+
+1. Using the same dataset, compute the mean, median and variance of Sodium\
+```{r}
+global_mean <- mean(hotdog$Sodium)
+global_med <- median(hotdog$Sodium)
+global_var <- var(hotdog$Sodium)
+
+global_mean
+global_med
+global_var
+```
+
+1.5 Create a custom function that, given an array of values, computes the mean. Crete another one which computes the variance.
+```{r}
+custom_mean <- function(values){
+  sum <- 0
+  N <- length(values)
+  for (value in values){
+    sum <- sum + value
+  }
+  return(sum/N)
+}
+
+custom_variance <- function(values){
+  sum <- 0
+  N <- length(values)
+  
+  for (value in values){
+    sum <- sum + value
+  }
+  mean <- sum/N
+  
+  sum_differences <- 0
+  
+  for (value in values){
+    tmp <- (value - mean)**2
+    sum_differences <- sum_differences + tmp
+  }
+  return(sum_differences/N)
+  
+}
+
+
+```
+
+
+2. Create a histogram of Sodium and add 2 lines representing the mean and median\
+```{r}
+hist(
+  hotdog$Sodium,
+  breaks = 20,
+  main="Distribution of Sodium",
+  xlab="Sodium",
+  col="lightblue"
+
+)
+abline(v = mean(hotdog$Sodium), col = "orange", lwd = 2, lty = 2) 
+abline(v = median(hotdog$Sodium), col = "blue", lwd = 2, lty = 2)
+```
+
+3. Compute mean_by_type, the mean for each type of hotdog.
+Hint: look at the by() function \
+```{r}
+mean_by_type = by(hotdog$Sodium, hotdog$Type, mean)
+mean_by_type
+```
+
+4. Convert the by output to a list\
+```{r}
+mean_list <- as.list(mean_by_type)
+mean_list$Beef
+```
+
+5. Boxplot for each type of hotdog\
+```{r}
+boxplot(
+  Sodium ~ Type, 
+  data=hotdog, 
+  main="Sodium by Hotdog Type", 
+  col=c("lightpink","lightblue","lightgreen")
+)
+```
+
+6. Compute the empirical cumulative distribution function (ECDF) for Sodium
+Hint: look at the ecdf function\
+
+```{r}
+plot(
+  ecdf(hotdog$Sodium), 
+  main="ECDF of Sodium", 
+  xlab="Sodium", 
+  ylab="F(x)"
+)
+```
+
+7. Plot and compare the ECDF for each Type of hotdog\
+```{r}
+ecdf_beef <- ecdf(hotdog$Sodium[hotdog$Type=="Beef"])
+ecdf_meat <- ecdf(hotdog$Sodium[hotdog$Type=="Meat"])
+ecdf_poultry <- ecdf(hotdog$Sodium[hotdog$Type=="Poultry"])
+
+par(mfrow=c(1,3))
+plot(ecdf_beef, main="Beef", xlab="Sodium")
+plot(ecdf_meat, main="Meat", xlab="Sodium")
+plot(ecdf_poultry, main="Poultry", xlab="Sodium")
+```
+
+8. Compute ECDF for x = 477.5 for each group using ecdf().\
+```{r}
+x <- 477.5
+ecdf_beef(x)
+ecdf_meat(x)
+ecdf_poultry(x)
+```
+```{r}
+par(mfrow=c(1,3))
+plot(ecdf_beef, main="Beef", xlab="Sodium", xlim=c(100,700))
+abline(v=x, col = "orange", lwd = 2, lty = 2)
+abline(h=ecdf_beef(x), col = "blue", lwd = 2, lty = 2)
+plot(ecdf_meat, main="Meat", xlab="Sodium", xlim=c(100,700))
+abline(h=ecdf_meat(x), col = "blue", lwd = 2, lty = 2)
+abline(v=x, col = "orange", lwd = 2, lty = 2)
+plot(ecdf_poultry, main="Poultry", xlab="Sodium", xlim=c(100,700))
+abline(h=ecdf_poultry(x), col = "blue", lwd = 2, lty = 2)
+abline(v=x, col = "orange", lwd = 2, lty = 2)
+```
+
